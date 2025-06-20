@@ -1,0 +1,15 @@
+{
+  "name": "feeds-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "apollo-server": "^3.12.0",
+    "graphql": "^16.8.0",
+    "faker": "^5.5.3"
+  }
+}
