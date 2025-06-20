@@ -35,7 +35,11 @@ export default function FeedList() {
           items={items}
           itemHeight={480}
           buffer={5}
-          renderItem={(feed) => <FeedItem key={feed.id} feed={feed} />}
+          renderItem={(feed) => (
+            <ErrorBoundary>
+              <FeedItem key={feed.id} feed={feed} />
+            </ErrorBoundary>
+          )}
         />
         <div ref={loader} aria-live="polite" style={{ minHeight: 40 }}>
           {loading && !error ? 'Loading…' : !hasNextPage && !error && 'No more posts'}

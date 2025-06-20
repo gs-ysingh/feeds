@@ -10,6 +10,13 @@ const feeds = Array.from({ length: FEED_TOTAL }).map((_, i) => ({
   image: `https://picsum.photos/seed/${i}/600/400`,
   content: faker.lorem.paragraphs(2),
   createdAt: new Date(Date.now() - i * 1000 * 60 * 60).toISOString(),
+  likes: faker.datatype.number({ min: 0, max: 100 }),
+  comments: Array.from({ length: faker.datatype.number({ min: 0, max: 3 }) }).map((_, j) => ({
+    id: `${j + 1}`,
+    author: faker.internet.userName(),
+    content: faker.lorem.sentence(),
+    createdAt: new Date(Date.now() - j * 1000 * 60 * 10).toISOString(),
+  })),
 }));
 
 // Resolvers
@@ -41,9 +48,28 @@ const resolvers = {
         image,
         content,
         createdAt: new Date().toISOString(),
+        likes: 0,
+        comments: [],
       };
       feeds.unshift(newPost); // Add to the start for instant appearance
       return newPost;
+    },
+    likePost: (_parent, { id }) => {
+      const post = feeds.find(f => f.id === id);
+      if (post) post.likes += 1;
+      return post;
+    },
+    addComment: (_parent, { postId, author, content }) => {
+      const post = feeds.find(f => f.id === postId);
+      if (!post) return null;
+      const newComment = {
+        id: `${post.comments.length + 1}`,
+        author,
+        content,
+        createdAt: new Date().toISOString(),
+      };
+      post.comments.push(newComment);
+      return post;
     },
   },
 };

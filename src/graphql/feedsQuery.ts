@@ -9,6 +9,13 @@ export const FEEDS_QUERY = gql`
         image
         content
         createdAt
+        likes
+        comments {
+          id
+          author
+          content
+          createdAt
+        }
       }
       pageInfo {
         endCursor
