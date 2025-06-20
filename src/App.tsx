@@ -1,12 +1,11 @@
 import './App.css';
 import { GraphQLProvider } from './providers/GraphQLProvider';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import FeedList from './components/FeedList';
 import { Post } from './components/Post';
 import { useScrollToTopOnRouteChange } from './hooks/useScrollToTopOnRouteChange';
 
 function ScrollToTop() {
-  const location = useLocation();
   useScrollToTopOnRouteChange();
   return null;
 }
