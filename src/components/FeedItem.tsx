@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { useMutation, gql } from '@apollo/client';
 import { LazyImage } from './LazyImage';
+import { useLikePost } from '../hooks/useLikePost';
+import { useComment } from '../hooks/useComment';
 
 export interface Comment {
   id: string;
@@ -21,37 +22,51 @@ export interface FeedItemProps {
   };
 }
 
-const ADD_COMMENT_MUTATION = gql`
-  mutation AddComment($postId: ID!, $author: String!, $content: String!) {
-    addComment(postId: $postId, author: $author, content: $content) {
-      id
-      comments {
-        id
-        author
-        content
-        createdAt
-      }
-    }
-  }
-`;
+// SimpleMarkdown: supports **bold**, *italic*, and line breaks
+function SimpleMarkdown({ text }: { text: string }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <>
+      {lines.map((line, i) => (
+        <span key={i}>
+          {line
+            .split(/(\*\*[^*]+\*\*)/g)
+            .map((part, j) =>
+              part.startsWith('**') && part.endsWith('**') ? (
+                <strong key={j}>{part.slice(2, -2)}</strong>
+              ) : (
+                part.split(/(\*[^*]+\*)/g).map((sub, k) =>
+                  sub.startsWith('*') && sub.endsWith('*') ? (
+                    <em key={k}>{sub.slice(1, -1)}</em>
+                  ) : (
+                    <React.Fragment key={k}>{sub}</React.Fragment>
+                  )
+                )
+              )
+            )}
+          <br />
+        </span>
+      ))}
+    </>
+  );
+}
 
 // Simple markdown-like rendering for **bold** and *italic*
 function renderRichText(text: string) {
-  if (!text) return null;
-  const html = text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br />');
-  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+  return <SimpleMarkdown text={text} />;
 }
 
 export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentAuthor, setCommentAuthor] = useState('');
   const [commentContent, setCommentContent] = useState('');
-  const [addComment, { loading: addingComment }] = useMutation(ADD_COMMENT_MUTATION, {
-    refetchQueries: ['Feeds'],
-  });
+  const { likePost, loading: liking, error: likeError } = useLikePost();
+  const { addComment, loading: addingComment, error: commentError } = useComment();
+
+  const handleLike = async () => {
+    await likePost({ variables: { id: feed.id } });
+  };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +76,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
         author: commentAuthor,
         content: commentContent,
       },
+      refetchQueries: ['Feeds'],
     });
     setCommentAuthor('');
     setCommentContent('');
@@ -83,7 +99,15 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
       />
       <section style={{ margin: '12px 0' }}>{renderRichText(feed.content)}</section>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '8px 0' }}>
-        <span aria-label="likes" title="Likes">❤️ {feed.likes}</span>
+        <button
+          aria-label="like post"
+          title="Like"
+          onClick={handleLike}
+          disabled={liking}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18 }}
+        >
+          ❤️ {feed.likes}
+        </button>
         <span
           aria-label="comments"
           title="Comments"
@@ -93,6 +117,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
           💬 {feed.comments.length}
         </span>
       </div>
+      {likeError && <div style={{ color: 'red' }}>Error liking post: {likeError.message}</div>}
       <footer style={{ fontSize: 12, color: '#888' }}>
         {new Date(feed.createdAt).toLocaleString()}
       </footer>
@@ -134,6 +159,7 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
           </button>
         </form>
       )}
+      {commentError && <div style={{ color: 'red' }}>Error adding comment: {commentError.message}</div>}
     </article>
   );
 };
