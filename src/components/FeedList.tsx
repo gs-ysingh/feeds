@@ -1,27 +1,12 @@
-import { useEffect, useRef } from 'react';
 import { useFeed } from '../hooks/useFeed';
 import { FeedItem } from './FeedItem';
 import { VirtualizedList } from './VirtualizedList';
 import { ErrorBoundary } from './ErrorBoundary';
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll';
 
 export default function FeedList() {
   const { items, loading, error, hasNextPage, loadMore } = useFeed();
-  const loader = useRef<HTMLDivElement | null>(null);
-
-  // Infinite scroll: load more when loader div is visible using IntersectionObserver
-  useEffect(() => {
-    if (!loader.current) return;
-    const observer = new window.IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !loading) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(loader.current);
-    return () => observer.disconnect();
-  }, [loadMore, loading, hasNextPage]);
+  const { ref: loaderRef } = useInfiniteScroll({ onLoadMore: loadMore, hasNextPage, loading });
 
   return (
     <ErrorBoundary>
@@ -44,9 +29,9 @@ export default function FeedList() {
             </ErrorBoundary>
           )}
         />
-        <div ref={loader} aria-live="polite" style={{ minHeight: 40, height: 40 }}>
-          {loading && hasNextPage && items.length > 0 && !error && 'Loading…'}
-          {!hasNextPage && items.length > 0 && !loading && !error && 'No more posts'}
+        <div ref={loaderRef} aria-live="polite" style={{ minHeight: 40, height: 40 }}>
+          {loading && hasNextPage && !error && 'Loading…'}
+          {!loading && !hasNextPage && items.length > 0 && !error && 'No more posts'}
         </div>
       </main>
     </ErrorBoundary>
