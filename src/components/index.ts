@@ -2,7 +2,6 @@ export * from './FeedList';
 export * from './FeedItem';
 export * from './LazyImage';
 export * from './VirtualizedList';
-export * from './AdvancedVirtualizedList';
 export * from './ErrorBoundary';
 export * from './ErrorMessage';
 export * from './LoadingIndicator';

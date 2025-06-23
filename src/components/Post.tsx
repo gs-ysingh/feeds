@@ -85,3 +85,5 @@ export const Post: React.FC = () => {
     </ErrorBoundary>
   );
 };
+
+export default Post;

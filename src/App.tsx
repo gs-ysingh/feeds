@@ -1,9 +1,13 @@
 import './App.css';
 import { GraphQLProvider } from './providers/GraphQLProvider';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import FeedList from './components/FeedList';
-import { Post } from './components/Post';
+import { lazy, Suspense } from 'react';
 import { useScrollToTopOnRouteChange } from './hooks/useScrollToTopOnRouteChange';
+import { LoadingIndicator } from './components/LoadingIndicator';
+
+// Lazy load components for code splitting
+const FeedList = lazy(() => import('./components/FeedList'));
+const Post = lazy(() => import('./components/Post'));
 
 function ScrollToTop() {
   useScrollToTopOnRouteChange();
@@ -21,10 +25,12 @@ function App() {
             <button type="button">Create Post</button>
           </Link>
         </nav>
-        <Routes>
-          <Route path="/" element={<FeedList />} />
-          <Route path="/post" element={<Post />} />
-        </Routes>
+        <Suspense fallback={<LoadingIndicator loading={true} text="Loading page..." />}>
+          <Routes>
+            <Route path="/" element={<FeedList />} />
+            <Route path="/post" element={<Post />} />
+          </Routes>
+        </Suspense>
       </Router>
     </GraphQLProvider>
   );
