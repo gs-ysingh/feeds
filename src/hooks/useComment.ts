@@ -1,4 +1,5 @@
-import { gql, useMutation } from '@apollo/client';
+import { gql } from '@apollo/client';
+import { useMutation } from './useMutation';
 
 const ADD_COMMENT_MUTATION = gql`
   mutation AddComment($postId: ID!, $author: String!, $content: String!) {
@@ -14,7 +15,28 @@ const ADD_COMMENT_MUTATION = gql`
   }
 `;
 
+interface AddCommentData {
+  addComment: {
+    id: string;
+    comments: Array<{
+      id: string;
+      author: string;
+      content: string;
+      createdAt: string;
+    }>;
+  };
+}
+
+interface AddCommentVariables {
+  postId: string;
+  author: string;
+  content: string;
+}
+
 export function useComment() {
-  const [addComment, { loading, error }] = useMutation(ADD_COMMENT_MUTATION);
+  const { mutate: addComment, loading, error } = useMutation<AddCommentData, AddCommentVariables>(
+    ADD_COMMENT_MUTATION
+  );
+  
   return { addComment, loading, error };
 }

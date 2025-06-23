@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { LazyImage } from './LazyImage';
+import { SimpleMarkdown } from './SimpleMarkdown';
+import { ErrorMessage } from './ErrorMessage';
 import { useLikePost } from '../hooks/useLikePost';
 import { useComment } from '../hooks/useComment';
+import { useFormInputs } from '../hooks/useFormInputs';
 
 export interface Comment {
   id: string;
@@ -22,47 +25,15 @@ export interface FeedItemProps {
   };
 }
 
-// SimpleMarkdown: supports **bold**, *italic*, and line breaks
-function SimpleMarkdown({ text }: { text: string }) {
-  if (!text) return null;
-  const lines = text.split('\n');
-  return (
-    <>
-      {lines.map((line, i) => (
-        <span key={i}>
-          {line
-            .split(/(\*\*[^*]+\*\*)/g)
-            .map((part, j) =>
-              part.startsWith('**') && part.endsWith('**') ? (
-                <strong key={j}>{part.slice(2, -2)}</strong>
-              ) : (
-                part.split(/(\*[^*]+\*)/g).map((sub, k) =>
-                  sub.startsWith('*') && sub.endsWith('*') ? (
-                    <em key={k}>{sub.slice(1, -1)}</em>
-                  ) : (
-                    <React.Fragment key={k}>{sub}</React.Fragment>
-                  )
-                )
-              )
-            )}
-          <br />
-        </span>
-      ))}
-    </>
-  );
-}
-
-// Simple markdown-like rendering for **bold** and *italic*
-function renderRichText(text: string) {
-  return <SimpleMarkdown text={text} />;
-}
-
 export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
   const [showCommentBox, setShowCommentBox] = useState(false);
-  const [commentAuthor, setCommentAuthor] = useState('');
-  const [commentContent, setCommentContent] = useState('');
   const { likePost, loading: liking, error: likeError } = useLikePost();
   const { addComment, loading: addingComment, error: commentError } = useComment();
+  
+  const { values, handleInputChange, resetForm } = useFormInputs({
+    author: '',
+    content: ''
+  });
 
   const handleLike = async () => {
     await likePost({ variables: { id: feed.id } });
@@ -73,13 +44,12 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
     await addComment({
       variables: {
         postId: feed.id,
-        author: commentAuthor,
-        content: commentContent,
+        author: values.author,
+        content: values.content,
       },
       refetchQueries: ['Feeds'],
     });
-    setCommentAuthor('');
-    setCommentContent('');
+    resetForm();
     setShowCommentBox(false);
   };
 
@@ -97,7 +67,9 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
         loading="lazy"
         style={{ width: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 8 }}
       />
-      <section style={{ margin: '12px 0' }}>{renderRichText(feed.content)}</section>
+      <section style={{ margin: '12px 0' }}>
+        <SimpleMarkdown text={feed.content} />
+      </section>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, margin: '8px 0' }}>
         <button
           aria-label="like post"
@@ -117,7 +89,9 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
           💬 {feed.comments.length}
         </span>
       </div>
-      {likeError && <div style={{ color: 'red' }}>Error liking post: {likeError.message}</div>}
+      
+      <ErrorMessage error={likeError} prefix="Error liking post" />
+      
       <footer style={{ fontSize: 12, color: '#888' }}>
         {new Date(feed.createdAt).toLocaleString()}
       </footer>
@@ -141,16 +115,16 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
           <input
             type="text"
             placeholder="Your name"
-            value={commentAuthor}
-            onChange={e => setCommentAuthor(e.target.value)}
+            value={values.author}
+            onChange={handleInputChange('author')}
             required
             style={{ marginRight: 8 }}
           />
           <input
             type="text"
             placeholder="Add a comment..."
-            value={commentContent}
-            onChange={e => setCommentContent(e.target.value)}
+            value={values.content}
+            onChange={handleInputChange('content')}
             required
             style={{ marginRight: 8, width: 200 }}
           />
@@ -159,7 +133,8 @@ export const FeedItem: React.FC<FeedItemProps> = ({ feed }) => {
           </button>
         </form>
       )}
-      {commentError && <div style={{ color: 'red' }}>Error adding comment: {commentError.message}</div>}
+      
+      <ErrorMessage error={commentError} prefix="Error adding comment" />
     </article>
   );
 };

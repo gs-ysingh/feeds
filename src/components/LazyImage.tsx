@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 
 export interface LazyImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src: string;
@@ -12,7 +13,19 @@ export const LazyImage: React.FC<LazyImageProps> = ({ src, alt, ...props }) => {
   const isCached = loadedImages.has(src);
   const [isVisible, setIsVisible] = useState(isCached);
   const [isLoaded, setIsLoaded] = useState(isCached);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+
+  // Intersection observer callback
+  const handleIntersect = useCallback((entry: IntersectionObserverEntry) => {
+    if (entry.isIntersecting) {
+      setIsVisible(true);
+    }
+  }, []);
+
+  // Use generic intersection observer hook (only for non-cached images)
+  const imgRef = useIntersectionObserver<HTMLImageElement>(
+    isCached ? () => {} : handleIntersect,
+    { threshold: 0.1 }
+  );
 
   useEffect(() => {
     // If image is cached, no need for intersection observer
@@ -21,23 +34,6 @@ export const LazyImage: React.FC<LazyImageProps> = ({ src, alt, ...props }) => {
       setIsLoaded(true);
       return;
     }
-    
-    // Only use intersection observer for non-cached images
-    const observer = new window.IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-    return () => observer.disconnect();
   }, [src]); // Re-run when src changes
 
   const handleLoad = () => {
